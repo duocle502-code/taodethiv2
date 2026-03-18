@@ -1,4 +1,4 @@
-import { Home, BookOpen, Layers, CheckSquare, BarChart2, X, LogOut, Shield } from 'lucide-react';
+import { Home, BookOpen, CheckSquare, BarChart2, X, LogOut, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuthStore } from '../store/authStore';
 
@@ -12,7 +12,6 @@ interface SidebarProps {
 const allNavItems = [
   { id: 'dashboard', label: 'Tổng Quan', icon: Home, roles: ['admin', 'staff'] },
   { id: 'subjects', label: 'Môn Học', icon: BookOpen, roles: ['admin', 'staff'] },
-  { id: 'matrix', label: 'Ma Trận Kiến Thức', icon: Layers, roles: ['admin', 'staff'] },
   { id: 'generator', label: 'Tạo Đề Thi', icon: CheckSquare, roles: ['admin', 'staff', 'customer'] },
   { id: 'statistics', label: 'Thống Kê', icon: BarChart2, roles: ['admin', 'staff', 'customer'] },
 ];
