@@ -7,7 +7,7 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import DashboardView from './components/DashboardView';
 import SubjectsView from './components/SubjectsView';
-import MatrixView from './components/MatrixView';
+
 import GeneratorView from './components/GeneratorView';
 import StatisticsView from './components/StatisticsView';
 import SettingsModal from './components/SettingsModal';
@@ -97,8 +97,7 @@ export default function App() {
         return <DashboardView data={data} />;
       case 'subjects':
         return <SubjectsView data={data} onSaveData={handleSaveData} />;
-      case 'matrix':
-        return <MatrixView data={data} />;
+
       case 'generator':
         return <GeneratorView data={data} onSaveData={handleSaveData} />;
       case 'statistics':
