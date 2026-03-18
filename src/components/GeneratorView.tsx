@@ -143,7 +143,7 @@ export default function GeneratorView({ data, onSaveData }: GeneratorViewProps) 
       Swal.fire({
         icon: 'warning',
         title: 'Thiếu thông tin',
-        text: 'Vui lòng chọn môn học và nhập chủ đề/ma trận kiến thức!',
+        text: 'Vui lòng chọn môn học và nhập chủ đề/yêu cầu đề thi!',
         confirmButtonColor: '#4A90E2'
       });
       return;
@@ -221,7 +221,7 @@ Yêu cầu định dạng đầu ra (Markdown):
 **LƯU Ý QUAN TRỌNG:** Câu hỏi mới phải KHÁC nội dung đề mẫu nhưng CÙNG mức độ và dạng bài. Không copy lại câu hỏi gốc.`;
     } else {
       // Chế độ soạn đề mới
-      prompt = `Bạn là một chuyên gia giáo dục và ra đề thi xuất sắc tại Việt Nam.\nHãy tạo một bộ đề thi trắc nghiệm môn ${subjectName} với chủ đề/ma trận kiến thức sau: "${topic}".\nSố lượng câu hỏi: ${questionCount}.\nĐộ khó: ${difficulty === 'mixed' ? 'Trộn lẫn các mức độ (Nhận biết, Thông hiểu, Vận dụng, Vận dụng cao)' : difficulty}.\n${mathRules}\n\nYêu cầu định dạng đầu ra (Markdown):\n# ĐỀ THI MÔN ${subjectName.toUpperCase()}\n**Chủ đề:** ${topic}\n**Thời gian làm bài:** ${Math.round(questionCount * 1.5)} phút\n\n---\n## PHẦN ĐỀ THI\n(Liệt kê các câu hỏi từ 1 đến ${questionCount}, mỗi câu có 4 đáp án A, B, C, D)\n\n---\n## PHẦN ĐÁP ÁN VÀ GIẢI THÍCH CHI TIẾT\n(Cung cấp bảng đáp án và giải thích chi tiết cho từng câu hỏi)\n\nHãy đảm bảo câu hỏi chính xác, khoa học, không có lỗi sai kiến thức và bám sát chương trình giáo dục phổ thông của Việt Nam.`;
+      prompt = `Bạn là một chuyên gia giáo dục và ra đề thi xuất sắc tại Việt Nam.\nHãy tạo một bộ đề thi trắc nghiệm môn ${subjectName} với chủ đề sau: "${topic}".\nSố lượng câu hỏi: ${questionCount}.\nĐộ khó: ${difficulty === 'mixed' ? 'Trộn lẫn các mức độ (Nhận biết, Thông hiểu, Vận dụng, Vận dụng cao)' : difficulty}.\n${mathRules}\n\nYêu cầu định dạng đầu ra (Markdown):\n# ĐỀ THI MÔN ${subjectName.toUpperCase()}\n**Chủ đề:** ${topic}\n**Thời gian làm bài:** ${Math.round(questionCount * 1.5)} phút\n\n---\n## PHẦN ĐỀ THI\n(Liệt kê các câu hỏi từ 1 đến ${questionCount}, mỗi câu có 4 đáp án A, B, C, D)\n\n---\n## PHẦN ĐÁP ÁN VÀ GIẢI THÍCH CHI TIẾT\n(Cung cấp bảng đáp án và giải thích chi tiết cho từng câu hỏi)\n\nHãy đảm bảo câu hỏi chính xác, khoa học, không có lỗi sai kiến thức và bám sát chương trình giáo dục phổ thông của Việt Nam.`;
     }
 
     try {
@@ -404,7 +404,7 @@ ${htmlContent}
               value={topic} onChange={(e) => setTopic(e.target.value)}
               placeholder={generateMode === 'similar'
                 ? 'Dán nội dung đề thi mẫu vào đây, hoặc ĐÍNH KÈM file PDF/Word ở trên. AI sẽ phân tích và tạo đề tương tự cùng mức độ.'
-                : 'VD: Đạo hàm và ứng dụng (3 câu nhận biết, 2 câu vận dụng cao)...  Hoặc ĐÍNH KÈM file ma trận bằng tính năng bên trên.'
+                : 'VD: Đạo hàm và ứng dụng (3 câu nhận biết, 2 câu vận dụng cao)...  Hoặc ĐÍNH KÈM file tài liệu bằng tính năng bên trên.'
               }
               className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary min-h-[120px] resize-y"
             />
@@ -494,7 +494,7 @@ ${htmlContent}
                      <div className="w-16 h-16 border-4 border-blue-100 rounded-full"></div>
                      <div className="w-16 h-16 border-4 border-blue-500 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
                    </div>
-                   <p className="font-medium animate-pulse text-blue-600">Trí tuệ nhân tạo đang phân tích ma trận kiến thức...</p>
+                   <p className="font-medium animate-pulse text-blue-600">Trí tuệ nhân tạo đang soạn đề thi...</p>
                  </div>
                ) : generatedExam ? (
                  <div ref={examContentRef} className="prose prose-blue max-w-none prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-p:text-gray-700">
