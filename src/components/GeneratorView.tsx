@@ -5,7 +5,7 @@ import { callGeminiAI } from '../services/geminiService';
 import { apiKeyManager } from '../services/apiKeyManager';
 import { extractTextFromFile } from '../services/fileParser';
 import Swal from 'sweetalert2';
-import { Loader2, FileText, Download, CheckSquare, BrainCircuit, Save, Trash2, Paperclip, RefreshCw, Sparkles } from 'lucide-react';
+import { Loader2, FileText, Download, CheckSquare, BrainCircuit, Save, Trash2, Paperclip, RefreshCw, Sparkles, Printer, FileDown, ChevronDown } from 'lucide-react';
 import { MathMarkdown } from './MathMarkdown';
 
 interface GeneratorViewProps {
@@ -33,6 +33,8 @@ export default function GeneratorView({ data, onSaveData }: GeneratorViewProps) 
   const [lastSaved, setLastSaved] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const examContentRef = useRef<HTMLDivElement>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   // Load kiểm tra có session cũ không
   useEffect(() => {
@@ -242,6 +244,79 @@ Yêu cầu định dạng đầu ra (Markdown):
     }
   };
 
+  // ===== DOWNLOAD / EXPORT =====
+
+  const getSubjectName = () => data.subjects.find(s => s.id === selectedSubject)?.name || 'DeThi';
+
+  const downloadAsWord = () => {
+    const el = examContentRef.current;
+    if (!el) return;
+    const htmlContent = el.innerHTML;
+
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Đề thi ${getSubjectName()}</title>
+<style>
+body{font-family:'Times New Roman',serif;font-size:13pt;line-height:1.6;margin:2cm;color:#000}
+h1{font-size:18pt;text-align:center;font-weight:bold;margin-bottom:8pt}
+h2{font-size:15pt;font-weight:bold;margin-top:16pt;border-bottom:1px solid #333;padding-bottom:4pt}
+h3{font-size:13pt;font-weight:bold;margin-top:12pt}
+hr{border:none;border-top:1px solid #666;margin:12pt 0}
+ul,ol{margin-left:20pt}li{margin-bottom:4pt}p{margin:6pt 0}
+.math-block{text-align:center;margin:10pt 0;font-style:italic}
+</style></head><body>${htmlContent}</body></html>`;
+
+    const blob = new Blob(['\ufeff' + fullHtml], { type: 'application/msword;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `DeThi_${getSubjectName()}_${new Date().toISOString().slice(0,10)}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+    Swal.fire({ icon: 'success', title: 'Đã tải xuống!', text: 'Mở bằng Microsoft Word để chỉnh sửa.', timer: 2000, showConfirmButton: false });
+  };
+
+  const printAsPdf = () => {
+    const el = examContentRef.current;
+    if (!el) return;
+    const htmlContent = el.innerHTML;
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Trình duyệt chặn popup. Vui lòng cho phép popup để in.' });
+      return;
+    }
+
+    printWin.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Đề thi ${getSubjectName()}</title>
+<script>
+window.MathJax={tex:{inlineMath:[['$','$'],['\\\\(','\\\\)']],displayMath:[['$$','$$'],['\\\\[','\\\\]']]},startup:{typeset:true}};
+<\/script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async><\/script>
+<style>
+@media print{body{margin:0;padding:15mm}.no-print{display:none!important}}
+body{font-family:'Times New Roman',serif;font-size:13pt;line-height:1.8;max-width:210mm;margin:0 auto;padding:20px;color:#000}
+h1{font-size:18pt;text-align:center;font-weight:bold;margin-bottom:6pt}
+h2{font-size:15pt;font-weight:bold;margin-top:18pt;border-bottom:1.5px solid #333;padding-bottom:4pt}
+h3{font-size:13pt;font-weight:bold;margin-top:14pt}
+hr{border:none;border-top:1px solid #999;margin:14pt 0}
+ul,ol{margin-left:24pt}li{margin-bottom:4pt}p{margin:6pt 0}
+.math-block{text-align:center;margin:12pt 0}
+svg{max-width:100%;height:auto}
+.svg-figure{border:1px solid #ccc!important}
+.print-btn{position:fixed;top:20px;right:20px;padding:12px 28px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,.3);z-index:1000}
+.print-btn:hover{background:#1d4ed8}
+</style></head><body>
+<button class="print-btn no-print" onclick="window.print()">🖨️ In / Lưu PDF</button>
+${htmlContent}
+<script>setTimeout(function(){if(window.MathJax&&window.MathJax.typesetPromise)window.MathJax.typesetPromise()},1000)<\/script>
+</body></html>`);
+    printWin.document.close();
+    setShowExportMenu(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
@@ -384,9 +459,31 @@ Yêu cầu định dạng đầu ra (Markdown):
               Nội dung biên soạn
             </h3>
             {generatedExam && !isGenerating && (
-              <button className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2">
-                <Download className="w-4 h-4" /> Xuất Word/PDF
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" /> Tải xuống
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {showExportMenu && (
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-20 min-w-[180px]">
+                    <button
+                      onClick={downloadAsWord}
+                      className="w-full px-4 py-2.5 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2.5 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4" /> Tải file Word (.doc)
+                    </button>
+                    <button
+                      onClick={printAsPdf}
+                      className="w-full px-4 py-2.5 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2.5 transition-colors"
+                    >
+                      <Printer className="w-4 h-4" /> In / Lưu PDF
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -400,7 +497,7 @@ Yêu cầu định dạng đầu ra (Markdown):
                    <p className="font-medium animate-pulse text-blue-600">Trí tuệ nhân tạo đang phân tích ma trận kiến thức...</p>
                  </div>
                ) : generatedExam ? (
-                 <div className="prose prose-blue max-w-none prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-p:text-gray-700">
+                 <div ref={examContentRef} className="prose prose-blue max-w-none prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-p:text-gray-700">
                    <MathMarkdown content={generatedExam} />
                  </div>
                ) : (
