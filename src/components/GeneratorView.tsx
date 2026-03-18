@@ -5,8 +5,18 @@ import { callGeminiAI } from '../services/geminiService';
 import { apiKeyManager } from '../services/apiKeyManager';
 import { extractTextFromFile } from '../services/fileParser';
 import Swal from 'sweetalert2';
-import { Loader2, FileText, Download, CheckSquare, BrainCircuit, Save, Trash2, Paperclip, RefreshCw, Sparkles, Printer, FileDown, ChevronDown } from 'lucide-react';
+import { Loader2, FileText, Download, CheckSquare, BrainCircuit, Save, Trash2, Paperclip, RefreshCw, Sparkles, Printer, FileDown, ChevronDown, BookMarked, Eye, Clock, ChevronUp } from 'lucide-react';
 import { MathMarkdown } from './MathMarkdown';
+
+interface SavedExam {
+  id: string;
+  title: string;
+  subject: string;
+  content: string;
+  questionCount: number;
+  difficulty: string;
+  createdAt: string;
+}
 
 interface GeneratorViewProps {
   data: AppData;
@@ -35,6 +45,11 @@ export default function GeneratorView({ data, onSaveData }: GeneratorViewProps) 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const examContentRef = useRef<HTMLDivElement>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
+
+  // Saved Exams
+  const [savedExams, setSavedExams] = useState<SavedExam[]>([]);
+  const [showSavedExams, setShowSavedExams] = useState(false);
+  const [viewingExam, setViewingExam] = useState<SavedExam | null>(null);
 
   // Load kiểm tra có session cũ không
   useEffect(() => {
@@ -336,6 +351,66 @@ ${htmlContent}
     setShowExportMenu(false);
   };
 
+  // ===== SAVED EXAMS =====
+
+  const SAVED_EXAMS_KEY = 'savedExams';
+
+  const loadSavedExams = useCallback(() => {
+    try {
+      const stored = localStorage.getItem(SAVED_EXAMS_KEY);
+      if (stored) setSavedExams(JSON.parse(stored));
+    } catch (e) { console.error('Failed to load saved exams', e); }
+  }, []);
+
+  useEffect(() => { loadSavedExams(); }, [loadSavedExams]);
+
+  const saveCurrentExam = () => {
+    if (!generatedExam) return;
+    const subjectName = data.subjects.find(s => s.id === selectedSubject)?.name || 'Chung';
+    const titleMatch = generatedExam.match(/^#\s+(.+)$/m);
+    const title = titleMatch ? titleMatch[1].substring(0, 80) : `Đề thi ${subjectName} - ${topic.substring(0, 30)}`;
+
+    const newExam: SavedExam = {
+      id: Date.now().toString(),
+      title,
+      subject: subjectName,
+      content: generatedExam,
+      questionCount,
+      difficulty,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [newExam, ...savedExams];
+    setSavedExams(updated);
+    localStorage.setItem(SAVED_EXAMS_KEY, JSON.stringify(updated));
+    Swal.fire({ icon: 'success', title: 'Đã lưu đề thi!', timer: 1500, showConfirmButton: false });
+  };
+
+  const deleteSavedExam = (id: string) => {
+    Swal.fire({
+      title: 'Xóa đề thi?',
+      text: 'Bạn có chắc muốn xóa đề thi đã lưu này?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonText: 'Hủy',
+      confirmButtonText: 'Xóa',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const updated = savedExams.filter(e => e.id !== id);
+        setSavedExams(updated);
+        localStorage.setItem(SAVED_EXAMS_KEY, JSON.stringify(updated));
+        if (viewingExam?.id === id) setViewingExam(null);
+      }
+    });
+  };
+
+  const viewSavedExam = (exam: SavedExam) => {
+    setGeneratedExam(exam.content);
+    setViewingExam(exam);
+    setShowSavedExams(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
@@ -478,30 +553,38 @@ ${htmlContent}
               Nội dung biên soạn
             </h3>
             {generatedExam && !isGenerating && (
-              <div className="relative">
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowExportMenu(!showExportMenu)}
-                  className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
+                  onClick={saveCurrentExam}
+                  className="px-3 py-1.5 text-sm font-medium text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors flex items-center gap-1.5"
                 >
-                  <Download className="w-4 h-4" /> Tải xuống
-                  <ChevronDown className="w-3 h-3" />
+                  <BookMarked className="w-4 h-4" /> Lưu đề
                 </button>
-                {showExportMenu && (
-                  <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-20 min-w-[180px]">
-                    <button
-                      onClick={downloadAsWord}
-                      className="w-full px-4 py-2.5 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2.5 transition-colors"
-                    >
-                      <FileDown className="w-4 h-4" /> Tải file Word (.doc)
-                    </button>
-                    <button
-                      onClick={printAsPdf}
-                      className="w-full px-4 py-2.5 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2.5 transition-colors"
-                    >
-                      <Printer className="w-4 h-4" /> In / Lưu PDF
-                    </button>
-                  </div>
-                )}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" /> Tải xuống
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                  {showExportMenu && (
+                    <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-20 min-w-[180px]">
+                      <button
+                        onClick={downloadAsWord}
+                        className="w-full px-4 py-2.5 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2.5 transition-colors"
+                      >
+                        <FileDown className="w-4 h-4" /> Tải file Word (.doc)
+                      </button>
+                      <button
+                        onClick={printAsPdf}
+                        className="w-full px-4 py-2.5 text-sm text-left text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2.5 transition-colors"
+                      >
+                        <Printer className="w-4 h-4" /> In / Lưu PDF
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -530,6 +613,81 @@ ${htmlContent}
           </div>
         </motion.div>
       </div>
+
+      {/* Saved Exams Panel */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+        className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+      >
+        <button
+          onClick={() => setShowSavedExams(!showSavedExams)}
+          className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-2.5">
+            <BookMarked className="w-5 h-5 text-emerald-500" />
+            <h3 className="text-lg font-semibold text-gray-900">Đề thi đã lưu</h3>
+            {savedExams.length > 0 && (
+              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">{savedExams.length}</span>
+            )}
+          </div>
+          {showSavedExams ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+        </button>
+
+        <AnimatePresence>
+          {showSavedExams && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="px-6 pb-5 border-t border-gray-100">
+                {savedExams.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">Chưa có đề thi nào được lưu.</p>
+                ) : (
+                  <div className="space-y-3 mt-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                    {savedExams.map((exam) => (
+                      <div
+                        key={exam.id}
+                        className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
+                          viewingExam?.id === exam.id
+                            ? 'border-emerald-300 bg-emerald-50'
+                            : 'border-gray-100 bg-gray-50 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1 mr-3">
+                          <h4 className="text-sm font-semibold text-gray-900 truncate">{exam.title}</h4>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                            <span className="font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{exam.subject}</span>
+                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(exam.createdAt).toLocaleDateString('vi-VN')} {new Date(exam.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>{exam.questionCount} câu</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => viewSavedExam(exam)}
+                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                            title="Xem đề"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteSavedExam(exam.id)}
+                            className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                            title="Xóa"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Restore Session Modal */}
       {showRestoreModal && pendingSession && (
