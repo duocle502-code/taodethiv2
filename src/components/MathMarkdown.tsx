@@ -68,12 +68,12 @@ function markdownToHtml(md: string): string {
 
   // 2a. SVG trong code block: ```svg\n...\n```
   html = html.replace(/```svg[\s]*\n([\s\S]*?)```/g, (_, svgContent) => {
-    return protect(`<div class="my-4 flex justify-center"><div class="svg-container bg-white rounded-xl border border-gray-200 p-3 inline-block shadow-sm">${svgContent.trim()}</div></div>`);
+    return protect(`<div class="my-5 flex justify-center"><div class="svg-figure" style="background:#fff; border:2px solid #e2e8f0; border-radius:16px; padding:20px 24px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.06);">${svgContent.trim()}</div></div>`);
   });
 
   // 2b. SVG raw: <svg...>...</svg> (AI có thể không bọc trong code block)
   html = html.replace(/<svg[\s\S]*?<\/svg>/gi, (match) => {
-    return protect(`<div class="my-4 flex justify-center"><div class="svg-container bg-white rounded-xl border border-gray-200 p-3 inline-block shadow-sm">${match}</div></div>`);
+    return protect(`<div class="my-5 flex justify-center"><div class="svg-figure" style="background:#fff; border:2px solid #e2e8f0; border-radius:16px; padding:20px 24px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.06);">${match}</div></div>`);
   });
 
   // 3. Code blocks: ```lang\n...\n```
